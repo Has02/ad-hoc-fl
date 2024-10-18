@@ -15,8 +15,8 @@ def read_df():
         with open("mobility_objects/mobility_data_filt.pkl", "rb") as f:
             df = pickle.load(f)
             return df
-    with open("RVF_ATX_PID_HZ_Places_Lookup.tsv",'r') as file:
-        lookup = pd.read_csv(file,encoding='utf-8',delimiter='\t')
+    with open("RVF_ATX_PID_HZ_Places_Lookup.tsv",'rb') as file:
+        lookup = pd.read_csv(file, encoding='latin1', delimiter='\t')
     with open("RVF_ATX_PID_HZ-2020-05.tsv",'r') as file:
         data = pd.read_csv(file,delimiter='\t')
     df = pd.merge(data,lookup,on='venueid')
