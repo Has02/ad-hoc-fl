@@ -3,47 +3,112 @@ import json
 from os import path, mkdir
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--num_devices', type=int, default=3, help='Number of devices actually running on hardware')
-parser.add_argument('--dev_local_epochs', nargs='+', default=[2, 2, 2], help='Local epochs for each device')
-parser.add_argument('--dev_hw_types', nargs='+', default=["local", "local", "local"], help='Hardware type for each device')
-parser.add_argument('--dev_config_filename', type=str, help='Configuration file name')
-parser.add_argument('--ips', nargs='+', default=["127.0.0.1", "127.0.0.1", "127.0.0.1"], help='IPs for devices')
-parser.add_argument('--ports', nargs='+', default=[9090, 9091, 9092], help='Ports for devices')
-parser.add_argument('--cuda_names', nargs='+', default=['cuda:0', 'cuda:1', 'cpu'], help='Cuda_name for each device [cuda:number, cpu]')
-parser.add_argument('--train_batch_sizes', nargs='+', default=[64, 32, 16], help='Train batch sizes for devices')
-parser.add_argument('--model_names', nargs='+', default=['resnet_20', 'resnet_20', 'resnet_20'], help='Model name')
+parser.add_argument(
+    "--num_devices",
+    type=int,
+    default=3,
+    help="Number of devices actually running on hardware",
+)
+parser.add_argument(
+    "--dev_local_epochs",
+    nargs="+",
+    default=[2, 2, 2],
+    help="Local epochs for each device",
+)
+parser.add_argument(
+    "--dev_hw_types",
+    nargs="+",
+    default=["local", "local", "local"],
+    help="Hardware type for each device",
+)
+parser.add_argument("--dev_config_filename", type=str, help="Configuration file name")
+parser.add_argument(
+    "--ips",
+    nargs="+",
+    default=["127.0.0.1", "127.0.0.1", "127.0.0.1"],
+    help="IPs for devices",
+)
+parser.add_argument(
+    "--ports", nargs="+", default=[9090, 9091, 9092], help="Ports for devices"
+)
+parser.add_argument(
+    "--cuda_names",
+    nargs="+",
+    default=["cuda:0", "cuda:1", "cpu"],
+    help="Cuda_name for each device [cuda:number, cpu]",
+)
+parser.add_argument(
+    "--train_batch_sizes",
+    nargs="+",
+    default=[64, 32, 16],
+    help="Train batch sizes for devices",
+)
+parser.add_argument(
+    "--model_names",
+    nargs="+",
+    default=["resnet_20", "resnet_20", "resnet_20"],
+    help="Model name",
+)
 
 # Cloud configs
-parser.add_argument('--cloud_configs_filename', type=str, help='File name for cloud configs')
-parser.add_argument('--log_file', type=str, help='File for logging')
-parser.add_argument('--myseed', type=int, help='Seed')
-parser.add_argument('--local_testing', type=str, help='Test locally or not [true/false]')
-parser.add_argument('--learning_rate', type=float, default=0.01, help='Learning rate')
-parser.add_argument('--cloud_cuda', type=str, default="cuda:0", help='Cloud cuda_name')
-parser.add_argument('--dataset_name', type=str, default="cifar10", help='Dataset name')
-parser.add_argument('--train_batch_size', type=int, default=128, help='Training batch size')
-parser.add_argument('--data_iid', type=str, help='IID [true] or non-IID [false]')
-parser.add_argument('--num_users', type=int, help='Total number of users')
-parser.add_argument('--n_class', type=int, help='Classes per user')
-parser.add_argument('--model_name', type=str, help='Model name')
-parser.add_argument('--cloud_usr', type=str, help='Cloud username')
-parser.add_argument('--cloud_pwd', type=str, help='Cloud password')
-parser.add_argument('--cloud_path', type=str, help='Cloud path')
-parser.add_argument('--cloud_port', type=int, default=22, help='Cloud port')
-parser.add_argument('--momentum', type=float, default=0.9, help='Learning rate momentum')
+parser.add_argument(
+    "--cloud_configs_filename", type=str, help="File name for cloud configs"
+)
+parser.add_argument("--log_file", type=str, help="File for logging")
+parser.add_argument("--myseed", type=int, help="Seed")
+parser.add_argument(
+    "--local_testing", type=str, help="Test locally or not [true/false]"
+)
+parser.add_argument("--learning_rate", type=float, default=0.01, help="Learning rate")
+parser.add_argument("--cloud_cuda", type=str, default="cuda:0", help="Cloud cuda_name")
+parser.add_argument("--dataset_name", type=str, default="cifar10", help="Dataset name")
+parser.add_argument(
+    "--train_batch_size", type=int, default=128, help="Training batch size"
+)
+parser.add_argument("--data_iid", type=str, help="IID [true] or non-IID [false]")
+parser.add_argument("--num_users", type=int, help="Total number of users")
+parser.add_argument("--n_class", type=int, help="Classes per user")
+parser.add_argument("--model_name", type=str, help="Model name")
+parser.add_argument("--cloud_usr", type=str, help="Cloud username")
+parser.add_argument("--cloud_pwd", type=str, help="Cloud password")
+parser.add_argument("--cloud_path", type=str, help="Cloud path")
+parser.add_argument("--cloud_port", type=int, default=22, help="Cloud port")
+parser.add_argument(
+    "--momentum", type=float, default=0.9, help="Learning rate momentum"
+)
 
 # Mobility
-parser.add_argument('--mobility', type=str, default='false', help='Enable mobility?')
-parser.add_argument('--cosine', type=str, default='false', help='Use cosine if True, FedAvg if false')
-parser.add_argument('--hierarchical', type=str, default='false', help='if using star topology or hierarchical')
-parser.add_argument('--mobility_devices', type=int, default=100, help='number of mobility devices')
-parser.add_argument('--k2', type=int, default=10, help='number of edge aggregations for AP')
-parser.add_argument('--sigma', type=float, default=0.1, help='sigma for cosine similarity')
-parser.add_argument('--ap_option', type=str, default='use_only_trained_aps', help='choose from [use_only_trained_aps, hierfavg]')
-parser.add_argument('--aps', type=int, default=-1, help='-1 for all, AP >= 0 for how many APs we have')
+parser.add_argument("--mobility", type=str, default="false", help="Enable mobility?")
+parser.add_argument(
+    "--cosine", type=str, default="false", help="Use cosine if True, FedAvg if false"
+)
+parser.add_argument(
+    "--hierarchical",
+    type=str,
+    default="false",
+    help="if using star topology or hierarchical",
+)
+parser.add_argument(
+    "--mobility_devices", type=int, default=100, help="number of mobility devices"
+)
+parser.add_argument(
+    "--k2", type=int, default=10, help="number of edge aggregations for AP"
+)
+parser.add_argument(
+    "--sigma", type=float, default=0.1, help="sigma for cosine similarity"
+)
+parser.add_argument(
+    "--ap_option",
+    type=str,
+    default="use_only_trained_aps",
+    help="choose from [use_only_trained_aps, hierfavg]",
+)
+parser.add_argument(
+    "--aps", type=int, default=-1, help="-1 for all, AP >= 0 for how many APs we have"
+)
 
 # Bash executable configs
-parser.add_argument('--exec_name', type=str, help='Bash executable name')
+parser.add_argument("--exec_name", type=str, help="Bash executable name")
 
 args = parser.parse_args()
 
@@ -110,7 +175,7 @@ config_dict = {}
 if not path.exists("configs"):
     mkdir("configs")
 
-with open(path.join("configs", cloud_configs_filename), 'w') as file:
+with open(path.join("configs", cloud_configs_filename), "w") as file:
     config_dict["experiment"] = cloud_configs_filename.split("_")[2]
 
     config_dict["cloud_path"] = cloud_path
@@ -206,7 +271,7 @@ for k in model_names[0].split(" "):
 model_names = aux
 
 config_dict = {}
-with open(path.join("configs", dev_config_filename), 'w') as file:
+with open(path.join("configs", dev_config_filename), "w") as file:
     config_dict["num_devices"] = num_devices
     for dev_idx in range(num_devices):
         dev_dict = {}
@@ -223,13 +288,16 @@ with open(path.join("configs", dev_config_filename), 'w') as file:
 # Writing execution file sim.bash
 if not path.exists("execs"):
     mkdir("execs")
-with open(path.join("execs", exec_name), 'w') as file:
+with open(path.join("execs", exec_name), "w") as file:
     file.write("#!/bin/bash\n\ndeclare -a elems=(\n")
     for dev_idx in range(num_devices):
-        file.write(f"\t\"{ips[dev_idx]} {ports[dev_idx]}\"\n")
-    file.write(")\n\nfor elem in \"${elems[@]}\"\ndo\n\tread -a tuple <<< \"$elem\"\n\tpython device.py ")
-    file.write("--ip=\"${tuple[0]}\" --port=\"${tuple[1]}\" ")
+        file.write(f'\t"{ips[dev_idx]} {ports[dev_idx]}"\n')
+    file.write(
+        ')\n\nfor elem in "${elems[@]}"\ndo\n\tread -a tuple <<< "$elem"\n\tpython device.py '
+    )
+    file.write('--ip="${tuple[0]}" --port="${tuple[1]}" ')
     file.write(f"--exp={(cloud_configs_filename.split('_')[2]).split('p')[1]} --r=1 &")
     file.write(f"\ndone\n\n")
-    file.write(f"python cloud.py --cloud_cfg {path.join('configs',cloud_configs_filename)} ")
-    file.write(f"--dev_cfg {path.join('configs',dev_config_filename)} --seed {seed}")
+
+    file.write(f"python cloud.py --cloud_cfg {'configs/' + cloud_configs_filename} ")
+    file.write(f"--dev_cfg {'configs/' + dev_config_filename} --seed {seed}")

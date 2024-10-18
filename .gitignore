@@ -1,2 +1,12 @@
 .DS_Store
+__pycache__/
 mobility_data/__pycache__/
+mobility_data/mobility_objects/
+execs/
+data/
+dataset/
+files/
+logs/
+configs/
+models/__pycache__/
+models/CIFAR/__pycache__/

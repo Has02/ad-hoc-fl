@@ -10,7 +10,7 @@ PORT=10000
 e=0
 cloud_path="files"
 device_type="local"
-dataset_name="cifar10"
+dataset_name="mnist"
 model_name="conv5"
 aps=100
 seed=42
@@ -18,8 +18,8 @@ seed=42
 declare -a elems1=(
 # Mobility | Cosine  | hierarchical | k2 | sigma | ap_option | train_batch_size
   "true false true 2 0.1 hierfavg 8" # HierFAVG
-  "true true true 2 0.1 hierfavg 8" # MACFL
-  "true true true 2 0.1 use_only_trained_aps 8" # MOHAWK
+  #"true true true 2 0.1 hierfavg 8" # MACFL
+  #"true true true 2 0.1 use_only_trained_aps 8" # MOHAWK
 )
 
 declare -a elems2=(
