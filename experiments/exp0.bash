@@ -5,10 +5,10 @@ trap "kill 0" EXIT
 OLDIFS=$IFS
 
 cuda_limit_per_gpu=6
-num_devices=5
+num_devices=1
 PORT=10000
 e=0
-cloud_path="files"
+cloud_path="C://Users/nickg/Workspace/RWML/ad-hoc-fl/files/"
 device_type="local"
 dataset_name="mnist"
 model_name="conv5"
@@ -17,7 +17,7 @@ seed=42
 
 declare -a elems1=(
 # Mobility | Cosine  | hierarchical | k2 | sigma | ap_option | train_batch_size
-  "true false true 2 0.1 hierfavg 8" # HierFAVG
+  "false false true 2 0.1 hierfavg 8" # HierFAVG
   #"true true true 2 0.1 hierfavg 8" # MACFL
   #"true true true 2 0.1 use_only_trained_aps 8" # MOHAWK
 )

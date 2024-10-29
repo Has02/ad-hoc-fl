@@ -19,6 +19,7 @@ from utils import (
     send_file,
     test,
     seed_everything,
+    simulation_send_file,
 )
 from fl_utils import aggregate_cos, aggregate_avg
 import time
@@ -94,10 +95,11 @@ class DeviceHandler(threading.Thread):
         )
         # Step 2. Send configs and wait for setup to be done
         if self.end:
+            print(f"Ending {self.dev_name}")
             send_msg(
                 connection=self.connection, msg=f"{self.msg},end", verbose=self.verbose
             )
-            close_connection(connection=self.connection, verbose=self.verbose)
+            close_connection(connection=self.connection, verbose=True)
             exit()
         else:
             send_msg(
@@ -106,16 +108,17 @@ class DeviceHandler(threading.Thread):
                 verbose=self.verbose,
             )
         # Step 3. Synch with device with "done_setup"
+
         done_setup = receive_msg(
             connection=self.connection,
             buffer_size=self.buffer_size,
             recv_timeout=self.recv_timeout,
-            verbose=self.verbose,
+            verbose=True,
         )
-        assert (
-            done_setup is not "done_setup"
-        ), f"[!] Received no input from {self.dev_name}"
+        assert done_setup == "done_setup", f"[!] Received no input from {self.dev_name}"
         # Step 4. Send the device model weight
+        # just added this here for sanity
+        self.simulation = True
         if not self.simulation:
             send_file(
                 connection=self.connection,
@@ -129,14 +132,16 @@ class DeviceHandler(threading.Thread):
                 dev_path=self.cloud_path,
                 buffer_size=self.buffer_size,
                 recv_timeout=self.recv_timeout,
-                verbose=self.verbose,
+                verbose=True,
             )
+
         # Step 5. Synch with the server
+        print("Server Sync")
         received_data = receive_msg(
             connection=self.connection,
             buffer_size=self.buffer_size,
             recv_timeout=self.recv_timeout,
-            verbose=self.verbose,
+            verbose=True,
         )
         if received_data.split(";")[0] != "done_training":
             print("[!] ERROR not done training")
@@ -259,6 +264,7 @@ class Cloud:
                 myweights = torch.load(
                     path.join(cloud_path, f"global_weights_0.pth"),
                     map_location=preferred_device,
+                    weights_only=False,
                 )
                 myaps[ap_name].load_state_dict(myweights, strict=False)
                 torch.save(
@@ -358,6 +364,7 @@ class Cloud:
                 myweights = torch.load(
                     path.join(cloud_path, f"global_weights_{comm_round - 1}.pth"),
                     map_location=preferred_device,
+                    weights_only=False,
                 )
                 net_glob.load_state_dict(myweights, strict=False)
                 if hierarchical:
@@ -367,6 +374,7 @@ class Cloud:
                                 cloud_path, f"{ap_name}_weights_{comm_round - 1}.pth"
                             ),
                             map_location=preferred_device,
+                            weights_only=False,
                         )
                         myaps[ap_name].load_state_dict(myweights, strict=False)
                 if comm_round > 1:
@@ -863,6 +871,7 @@ class Cloud:
                                 torch.load(
                                     path.join(cloud_path, dev_model_filename),
                                     map_location=preferred_device,
+                                    weights_only=False,
                                 ),
                                 strict=False,
                             )
@@ -999,6 +1008,7 @@ class Cloud:
                                 torch.load(
                                     path.join(cloud_path, dev_model_filename),
                                     map_location=preferred_device,
+                                    weights_only=False,
                                 ),
                                 strict=False,
                             )
@@ -1020,7 +1030,10 @@ class Cloud:
                     )
 
             net_glob.load_state_dict(
-                torch.load(path.join(cloud_path, f"global_weights_{comm_round}.pth")),
+                torch.load(
+                    path.join(cloud_path, f"global_weights_{comm_round}.pth"),
+                    weights_only=False,
+                ),
                 strict=False,
             )
             loss_test, acc_test = test(

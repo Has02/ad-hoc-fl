@@ -124,6 +124,80 @@ def receive_file(
     return filesize
 
 
+def simulation_send_file(
+    connection,
+    target,
+    target_ip,
+    target_port,
+    target_path,
+    filename,
+    dev_path,
+    buffer_size,
+    recv_timeout,
+    verbose,
+):
+    """
+    Function for sending the local model for the Cloud Server.
+    After training the local model, the Device sends the message "ready" to the Cloud Server. Then,
+    the Device transfers the weight file. It sends another message to the Client in the following format:
+
+        {data}
+
+        where
+
+        {data} = {filename};{filesize}
+
+    Then, the Server waits for a message from the Client. If "Confirm" is received, the connection is closed. If
+    "Resend" is received, the file is resent until a "Confirm" message is received from the Client.
+    """
+
+    if verbose:
+        print(f"[+] Sending local model to the {target}")
+
+    zip_filename, filesize = zip_file(
+        filename=filename, target_path=dev_path, verbose=verbose
+    )
+
+    if verbose:
+        print(f"[+] Sending the {zip_filename} to {target_ip}")
+
+    scp_simulation(
+        target_ip=target_ip,
+        target_port=target_port,
+        target_path=target_path,
+        zip_filename=zip_filename,
+        source_path=dev_path,
+        verbose=verbose,
+    )
+
+    if verbose:
+        print("[+] Weights sent\n")
+        print(f"[+] Sending confirmation of transmission to the {target}.")
+
+    send_msg(connection, f"{filename};{filesize}", verbose)
+    if verbose:
+        print(f"[+] Getting confirmation from the {target}")
+    received_data = receive_msg(connection, buffer_size, recv_timeout, verbose)
+
+    while received_data != "Confirm":
+        if received_data == "Resend":
+            if verbose:
+                print(f"[+] RESENDING the {zip_filename} to {target_ip}")
+            scp_simulation(
+                target_ip=target_ip,
+                target_port=target_port,
+                target_path=target_path,
+                zip_filename=zip_filename,
+                source_path=dev_path,
+                verbose=verbose,
+            )
+
+            if verbose:
+                print("[+] Weights sent\n")
+                print(f"[+] Sending confirmation of transmission to the {target}.")
+            send_msg(connection, f"{filename};{filesize}", verbose)
+
+
 def send_file(
     connection,
     target,
@@ -418,7 +492,7 @@ def local_training(
     device = torch.device(cuda_name)
     model = get_model(model_name=f"{dataset_name}_{model_name}")
     model = model.to(device)
-    model.load_state_dict(torch.load(model_path), strict=False)
+    model.load_state_dict(torch.load(model_path, weights_only=False), strict=False)
     if verbose:
         print(f"[++] Device{dev_idx} training...")
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate, momentum=momentum)
@@ -775,7 +849,7 @@ def get_notification_transfer_done(
         The size of the file received.
     """
     msg = receive_msg(connection, buffer_size, recv_timeout, verbose)
-    assert msg is not None, f"[!] Received no input from {target}"
+    assert msg != None, f"[!] Received no input from {target}"
     filename, filesize = msg.split(";")
     return filename, int(filesize)
 
@@ -783,6 +857,57 @@ def get_notification_transfer_done(
 def progress_bar(f, size, sent, p):
     progress = sent / size * 100.0
     sys.stdout.write(f"({p[0]}:{p[1]}) {f}'s progress: {progress}\r")
+
+
+def scp_simulation(
+    target_ip,
+    target_port,
+    target_path,
+    zip_filename,
+    source_path,
+    verbose,
+):
+    """
+    File for sending a file through SCP.
+    """
+    if verbose:
+        print(f"[+] Server is sending zip file {zip_filename} to the Client.")
+    retry = True
+    while retry:
+        try:
+            time.sleep(np.random.randint(2, 6))
+            policy = paramiko.client.AutoAddPolicy
+            with paramiko.SSHClient() as client:
+                client.set_missing_host_key_policy(policy)
+                client.connect(
+                    target_ip,
+                    port=22,
+                    auth_timeout=200,
+                    banner_timeout=200,
+                )
+
+                with SCPClient(client.get_transport()) as scp:
+                    scp.put(
+                        path.join(source_path, zip_filename), remote_path=target_path
+                    )
+                retry = False
+
+        except BaseException as e:
+            print(f"[!] ERROR: {e}")
+            print(
+                f"[!] ERROR Connection failed. Could not connect to IP {target_ip} with username "
+                f"pi and password password for port {target_port}"
+            )
+            print(
+                f"[!] ERROR: could not put on {source_path} the file {zip_filename} for sending on the "
+                f"remote_path={target_path}"
+            )
+            retry = True
+            print(f"[!] Retrying...")
+            time.sleep(5)
+            # exit(-1)
+    if verbose:
+        print("[+] Server sent zip file to the Client.\n")
 
 
 def scp_file(
@@ -912,6 +1037,8 @@ def receive_msg(connection, buffer_size, recv_timeout, verbose):
         Returns None if there was an error or if recv_timeout seconds passed with unresponsive Client.
         Returns the received message otherwise.
     """
+    if verbose:
+        print("Running Receive Function")
     received_data, status = recv(connection, buffer_size, recv_timeout, verbose)
     if status == 0:
         connection.close()
@@ -924,6 +1051,7 @@ def receive_msg(connection, buffer_size, recv_timeout, verbose):
 
     if verbose:
         print(f"[+] Server received message from the Client: {received_data}\n")
+        print(f"Status: {status}")
     return received_data
 
 
