@@ -60,7 +60,8 @@ unsure of how this will affect the process. In the bash, change cuda limit per g
 TODO:
 
 - [ ] Figure out how to use num_workers in the dataloader
-- [ ] Figure out how to set the number of rounds, the default is 744, idk how to reduce that yet
+- [x] Figure out how to set the number of rounds, the default is 744, idk how to reduce that yet:
+  - You can change the _myrange_ variable in [cloud.py] to reduce the number of rounds, default is the number of timesteps in a day for the mobility data, which is 744 rounds.
 - [ ] Add networkx and create a graph of the devices and their connections
 - [ ] Implement dropout, stragglers, and battery life
 

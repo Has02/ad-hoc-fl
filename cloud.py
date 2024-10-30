@@ -304,7 +304,8 @@ class Cloud:
                 mobility_data_filt = pickle.load(f)
 
             t = list(mobility_data_filt.keys())
-            myrange = range(len(t))
+            # myrange = range(len(t)), but we want to limit the number of timesteps
+            myrange = range(10)
         else:
             t_idx = 0
             prefix = "mobility_data/mobility_objects"
@@ -324,7 +325,8 @@ class Cloud:
                 )
                 mobility_data_filt = pickle.load(f)
             t = list(mobility_data_filt.keys())
-            myrange = range(len(t))
+            # myrange = range(len(t)), limit timesteps
+            myrange = range(10)
 
         trained_until_now = []
         devices_last_seen = []
