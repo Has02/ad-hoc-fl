@@ -34,7 +34,7 @@ parser.add_argument(
 parser.add_argument(
     "--cuda_names",
     nargs="+",
-    default=["cuda:0", "cuda:1", "cpu"],
+    default=["cuda:0", "cpu"],
     help="Cuda_name for each device [cuda:number, cpu]",
 )
 parser.add_argument(

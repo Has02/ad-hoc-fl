@@ -4,8 +4,8 @@ trap "kill 0" EXIT
 
 OLDIFS=$IFS
 
-cuda_limit_per_gpu=6
-num_devices=1
+cuda_limit_per_gpu=100
+num_devices=10
 PORT=10000
 e=0
 cloud_path="C://Users/nickg/Workspace/RWML/ad-hoc-fl/files/"
@@ -33,7 +33,7 @@ cloud_usr="usr"
 cloud_pwd="pwd"
 cloud_port="22"
 cloud_cuda="cuda:0"
-my_num_users=1000 # for splitting the dataset between my_num_users users
+my_num_users=100 # for splitting the dataset between my_num_users users
 
 local_testing="false"
 PORT_INCR=50

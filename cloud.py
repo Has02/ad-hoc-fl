@@ -99,7 +99,7 @@ class DeviceHandler(threading.Thread):
             send_msg(
                 connection=self.connection, msg=f"{self.msg},end", verbose=self.verbose
             )
-            close_connection(connection=self.connection, verbose=True)
+            close_connection(connection=self.connection, verbose=self.verbose)
             exit()
         else:
             send_msg(
@@ -113,12 +113,14 @@ class DeviceHandler(threading.Thread):
             connection=self.connection,
             buffer_size=self.buffer_size,
             recv_timeout=self.recv_timeout,
-            verbose=True,
+            verbose=self.verbose,
         )
         assert done_setup == "done_setup", f"[!] Received no input from {self.dev_name}"
         # Step 4. Send the device model weight
         # just added this here for sanity
         self.simulation = True
+        print(self.dev_model_filename)
+        print(self.cloud_path)
         if not self.simulation:
             send_file(
                 connection=self.connection,
@@ -132,16 +134,15 @@ class DeviceHandler(threading.Thread):
                 dev_path=self.cloud_path,
                 buffer_size=self.buffer_size,
                 recv_timeout=self.recv_timeout,
-                verbose=True,
+                verbose=self.verbose,
             )
 
         # Step 5. Synch with the server
-        print("Server Sync")
         received_data = receive_msg(
             connection=self.connection,
             buffer_size=self.buffer_size,
             recv_timeout=self.recv_timeout,
-            verbose=True,
+            verbose=self.verbose,
         )
         if received_data.split(";")[0] != "done_training":
             print("[!] ERROR not done training")

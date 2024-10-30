@@ -18,6 +18,8 @@ from models.get_model import get_model
 import _pickle as cPickle
 from tqdm import tqdm
 
+os.environ["TORCH_DISTRIBUTED_DEBUG"] = "DETAIL"
+
 
 def seed_everything(seed: int):
     import random, os
@@ -332,6 +334,8 @@ def train(
 ):
 
     device = torch.device(cuda_name)
+    if verbose:
+        print(f"[++] Training on: {device}...")
     if data_iid:
         iidtype = "iid"
     else:
@@ -347,15 +351,20 @@ def train(
         labels_train = cPickle.load(f)
     with open(f"dataset/{dataset_name}/iid/seed{seed}/transform_train.pkl", "rb") as f:
         transform_train = cPickle.load(f)
+    # Changed num_workers from num_workers to 0, as it was causing issues with the DataLoader Deadlocking
+    # Not sure what the impact of that is yet...
     data_loader = DataLoader(
         DatasetSplitDirichlet(
             image=imgs_train, target=labels_train, transform=transform_train
         ),
         batch_size=batch_size,
         shuffle=True,
-        num_workers=num_workers,
+        num_workers=0,
     )
+    if verbose:
+        print(f"[++] All data loaded for device {dev_idx}...")
 
+    model = model.to(device)
     model.train()
 
     for epoch in range(local_epochs):
@@ -364,12 +373,13 @@ def train(
         total = 0
         batch_idx = 1
         for batch_idx, (images, labels) in enumerate(data_loader):
-            images, labels = images.to(device), labels.to(device)
+            images = images.to(device)
+            labels = labels.to(device)
+            optimizer.zero_grad()
             outputs, act = model(images)
             loss = loss_func(outputs, labels)
             loss.backward()
             optimizer.step()
-            optimizer.zero_grad()
 
             train_loss += loss.item()
             _, predicted = outputs.max(1)
@@ -507,7 +517,7 @@ def local_training(
         cuda_name=cuda_name,
         optimizer=optimizer,
         local_epochs=local_epochs,
-        verbose=verbose,
+        verbose=False,
         dataset_name=dataset_name,
         seed=seed,
         data_iid=data_iid,
@@ -1037,8 +1047,8 @@ def receive_msg(connection, buffer_size, recv_timeout, verbose):
         Returns None if there was an error or if recv_timeout seconds passed with unresponsive Client.
         Returns the received message otherwise.
     """
-    if verbose:
-        print("Running Receive Function")
+    # if verbose:
+    #     print("Running Receive Function")
     received_data, status = recv(connection, buffer_size, recv_timeout, verbose)
     if status == 0:
         connection.close()

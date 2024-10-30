@@ -1,4 +1,5 @@
-# [MOHAWK: Mobility and Heterogeneity-Aware Dynamic Community Selection for Hierarchical Federated Learning](https://dl.acm.org/doi/abs/10.1145/3576842.3582378) (IoTDI 2023) 
+# [MOHAWK: Mobility and Heterogeneity-Aware Dynamic Community Selection for Hierarchical Federated Learning](https://dl.acm.org/doi/abs/10.1145/3576842.3582378) (IoTDI 2023)
+
 Allen-Jasmin Farcas, Myungjin Lee, Ramana Rao Kompella, Hugo Latapie, Gustavo De Veciana, Radu Marculescu
 
 Contact: allen.farcas@utexas.edu
@@ -10,6 +11,7 @@ Contact: allen.farcas@utexas.edu
 </div>
 
 ## 1. Prepare environment
+
 ```bash
 conda create -n mohawk python==3.10
 conda activate mohawk
@@ -18,8 +20,10 @@ pip install paramiko scp tqdm pandas
 ```
 
 ## 2. Prepare mobility data
+
 Download the mobility dataset from [here](https://drive.google.com/file/d/1sFOMHPZOCiVKCVQAVubxyEApXWu-eU81/view?usp=share_link).
 Unzip the downloaded file under the `mobility_data` folder such that you have the following structure:
+
 ```
 mobility_data
 --- data_prepare.py
@@ -29,28 +33,45 @@ mobility_data
 ```
 
 Then, execute the following:
+
 ```bash
 cd mobility_data
 python data_prepare.py
 ```
 
 ## 3. Prepare datasets
+
 Run `python generate_dataset.py` to create the local datasets for all users.
 
 ## 4. Change paths
-In `utils.py` the function `get_hw_info` contains paths for the files. Change them accordingly. The username and 
-password only really matter if you run experiments on real devices. If you use only simulation you can leave any 
+
+In `utils.py` the function `get_hw_info` contains paths for the files. Change them accordingly. The username and
+password only really matter if you run experiments on real devices. If you use only simulation you can leave any
 placeholder text there, but the path for the files needs to be completed.
 
 You need to match the `hw_type` from `get_hw_info(hw_type)` with `device_type` from `exp0.bash` and if the added path
 is `home/user/MOHAWK/files` then in `exp0.bash` use `cloud_path="files"`.
 
+## 4.5. Doing some chicanery
+
+So the train function in utils has a dataloader that causes a deadlock for num_workers > 0. I set it to 0 but I'm
+unsure of how this will affect the process. In the bash, change cuda limit per gpu to however many devices you're training unless you have more than one GPU. My default is 10 devices on 100 users and 100 aps, re-run the data_prepare with 100 devices and generate_dataset with num users as 100 to make the default work. try to experiment with how many devices you can run on your machine. Look into how the num_workers actually works since I think it affects the distributed learning process.
+
+TODO:
+
+- [ ] Figure out how to use num_workers in the dataloader
+- [ ] Figure out how to set the number of rounds, the default is 744, idk how to reduce that yet
+- [ ] Add networkx and create a graph of the devices and their connections
+- [ ] Implement dropout, stragglers, and battery life
+
 ## 5. Run experiments
+
 Edit the experiment configuration `experiments/exp0.bash`. Check the simulation.py for more details on the parameters used.
 
 Run `bash experiments/exp0.bash` to start the experiment
 
 ## Citation
+
 ```
 @inproceedings{farcas2023mohawk,
   title={MOHAWK: Mobility and Heterogeneity-Aware Dynamic Community Selection for Hierarchical Federated Learning},

@@ -124,7 +124,7 @@ class Device:
         """
 
         msg = receive_msg(
-            self.connection, self.buffer_size, self.recv_timeout, verbose=self.verbose
+            self.connection, self.buffer_size, self.recv_timeout, verbose=True
         )
         if self.log_comm_time:
             filesize = getsizeof(msg)
@@ -215,14 +215,14 @@ class Device:
             os.mkdir(self.dev_path)
 
         if end == "end":
-            close_connection(connection=self.connection, verbose=self.verbose)
+            close_connection(connection=self.connection, verbose=True)
             return True
 
         # Step 2. Synch with Cloud with msg "done_setup"
         if self.log_comm_time:
             comm_time = 0.0
             start_time = time.time()
-        send_msg(connection=self.connection, msg="done_setup", verbose=self.verbose)
+        send_msg(connection=self.connection, msg="done_setup", verbose=True)
         if self.log_comm_time:
             filesize += getsizeof("done_setup")
             comm_time += time.time() - start_time
@@ -244,7 +244,7 @@ class Device:
             if self.log_comm_time:
                 comm_time += time.time() - start_time
         else:
-            _, myf = zip_file(filename=self.model_path, target_path=".", verbose=False)
+            _, myf = zip_file(filename=self.model_path, target_path=".", verbose=True)
             filesize += myf
             if self.log_comm_time:
                 comm_time += time.time() - start_time
@@ -278,7 +278,7 @@ class Device:
         send_msg(
             connection=self.connection,
             msg=f"done_training;{train_time}",
-            verbose=self.verbose,
+            verbose=True,
         )
         filesize += getsizeof(f"done_training;{train_time}")
         if self.log_comm_time:
@@ -305,13 +305,13 @@ class Device:
             if self.log_comm_time:
                 comm_time += time.time() - start_time
         else:
-            _, myf = zip_file(filename=self.model_path, target_path=".", verbose=False)
+            _, myf = zip_file(filename=self.model_path, target_path=".", verbose=True)
             filesize += myf
             if self.log_comm_time:
                 comm_time += time.time() - start_time
         after_train_filesize = filesize
         after_train_comm_time = comm_time
-        close_connection(connection=self.connection, verbose=self.verbose)
+        close_connection(connection=self.connection, verbose=True)
         return False
 
 
