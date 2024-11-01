@@ -71,6 +71,7 @@ Notes from Meeting:
 - [ ] Refine the upload speed slide, make three key points and make it more concise
 - [ ] Finalize how we model power, can use the communication energy model from the MOHAWK paper, find parameters to finalize the equation. Additionaly can add depletion for training time, but he's fine with that not being there.
 - [ ] To simulate node dropout, we still have to finish the training and add it to the t.join in the cloud. To dropout, we just won't include the training results in the aggregation. But definitely finish training it each time anyway or we'll have hanging threads.
+- [ ] The assert is not is supposed to be like that, we need to change it back to != in the _run_ function
 
 ## 5. Run experiments
 
