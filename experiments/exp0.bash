@@ -5,9 +5,9 @@ trap "kill 0" EXIT
 OLDIFS=$IFS
 
 cuda_limit_per_gpu=100
-num_devices=10
+num_devices=15
 PORT=10000
-e=0
+e=4
 cloud_path="C://Users/nickg/Workspace/RWML/ad-hoc-fl/files/"
 device_type="local"
 dataset_name="mnist"

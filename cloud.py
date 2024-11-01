@@ -8,6 +8,7 @@ import json
 import pickle
 from models.get_model import get_model
 import operator
+from speeds import select_speed
 from utils import (
     connect,
     receive_msg,
@@ -119,8 +120,7 @@ class DeviceHandler(threading.Thread):
         # Step 4. Send the device model weight
         # just added this here for sanity
         self.simulation = True
-        print(self.dev_model_filename)
-        print(self.cloud_path)
+
         if not self.simulation:
             send_file(
                 connection=self.connection,
@@ -301,10 +301,18 @@ class Cloud:
                 print(
                     f"Using: {mtype}_{mobility_devices}dev_{aps}ap_wifi_lte_100m_s{seed}.pkl"
                 )
+                with open("logs/internet_speeds.csv", "w") as logger:
+                    logger.write("Device Index,Internet Speed\n")
                 mobility_data_filt = pickle.load(f)
+                for t in mobility_data_filt.keys():
+                    for d in mobility_data_filt[t]:
+                        speed = select_speed()
+                        d["internet_speed"] = speed
+                        with open("logs/internet_speeds.csv", "a") as logger:
+                            logger.write(f"{d['device_idx']},{d['internet_speed']}\n")
 
             t = list(mobility_data_filt.keys())
-            # myrange = range(len(t)), but we want to limit the number of timesteps
+            # myrange = range(len(t)), limit the number of timesteps
             myrange = range(10)
         else:
             t_idx = 0
@@ -323,7 +331,16 @@ class Cloud:
                 print(
                     f"Using: {mtype}_{mobility_devices}dev_{aps}ap_wifi_lte_100m_s{seed}_nonmobility.pkl"
                 )
+                # create log of all internet speeds for each device
+                with open("logs/internet_speeds.csv", "w") as logger:
+                    logger.write("Device Index,Internet Speed\n")
                 mobility_data_filt = pickle.load(f)
+                for t in mobility_data_filt.keys():
+                    for d in mobility_data_filt[t]:
+                        speed = select_speed()
+                        d["internet_speed"] = speed
+                        with open("logs/internet_speeds.csv", "a") as logger:
+                            logger.write(f"{d['device_idx']},{d['internet_speed']}\n")
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit timesteps
             myrange = range(10)
@@ -334,6 +351,12 @@ class Cloud:
             with open(f"logs/aps_{experiment}.csv", "w") as logger:
                 logger.write(
                     f"Communication Round,Device Index,AP Name,Device Type,"
+                    f"Communication Speedup, Distance to AP\n"
+                )
+            # log for devices used in the round
+            with open(f"logs/devices_{experiment}.csv", "w") as logger:
+                logger.write(
+                    f"Communication Round,Device Index,Device Type,"
                     f"Communication Speedup, Distance to AP\n"
                 )
             if ap_option == "use_only_trained_aps":
@@ -524,6 +547,13 @@ class Cloud:
                     available_devices_idx = []
                     for d in available_devices:
                         available_devices_idx.append(d["device_idx"])
+                    # log for devices used in the round
+                    with open(f"logs/devices_{experiment}.csv", "a+") as logger:
+                        for d in available_devices:
+                            logger.write(
+                                f"{comm_round},{d['device_idx']},{d['device_type']},"
+                                f"{d['internet_speed']},{d['dist_to_ap']}\n"
+                            )
                 elif len(available_devices) > 10:
                     available_devices_idx = []
                     for d in available_devices:

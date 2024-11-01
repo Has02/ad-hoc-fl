@@ -498,7 +498,7 @@ def local_training(
     data_iid,
     seed,
 ):
-
+    is_slow = np.random.choice([True, False], p=[0.2, 0.8])
     device = torch.device(cuda_name)
     model = get_model(model_name=f"{dataset_name}_{model_name}")
     model = model.to(device)

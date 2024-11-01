@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 from multiprocessing import Pool
 import multiprocessing
+from speeds import select_speed
 
 BBox = [-97.8395, -97.6819, 30.1961, 30.3511]
 
@@ -199,6 +200,11 @@ def go_through_all_clients(
     topkid,
 ):
     mob_data_filt = []
+    # log all device speeds
+    # start new log with device id and speed
+    with open(f"mobility_objects/speeds_{t}.log", "w") as f:
+        f.write("device_id,speed\n")
+
     for id in id_per_timestamp[t]:
         if id not in topkid:
             continue
@@ -218,13 +224,19 @@ def go_through_all_clients(
             print(t)
         if dist > 0.00089977 and distance == 100:
             if ignore_out_of_range:
-                internet_speed = 0
+                internet_speed = select_speed()
+                with open(f"mobility_objects/speeds_{t}.log", "a") as f:
+                    f.write(f"{id},{internet_speed}\n")
             else:
-                internet_speed = 50
+                internet_speed = select_speed()
+                with open(f"mobility_objects/speeds_{t}.log", "a") as f:
+                    f.write(f"{id},{internet_speed}\n")
         else:
             # 25 Mbps  LTE  https://www.lifewire.com/how-fast-is-4g-wireless-service-577566
             # 1000Mbps Wi-Fi
-            internet_speed = 1000
+            internet_speed = select_speed()
+            with open(f"mobility_objects/speeds_{t}.log", "a") as f:
+                f.write(f"{id},{internet_speed}\n")
         my_dict = {
             "id": id,
             "lat": lat,
@@ -244,7 +256,7 @@ def create_mobility_data(
     ignore_out_of_range=False,
     distance=100,
     df=None,
-    top_devices=1000,
+    top_devices=100,
     mtype="hierfavg",
     seed=42,
     non_mobility=False,
@@ -364,13 +376,19 @@ def create_mobility_data(
                     print(t)
                 if dist > 0.00089977 and distance == 100:
                     if ignore_out_of_range:
-                        internet_speed = 0
+                        internet_speed = select_speed()
+                        with open(f"mobility_objects/speeds_{t}.log", "a") as f:
+                            f.write(f"{id},{internet_speed}\n")
                     else:
-                        internet_speed = 50
+                        internet_speed = select_speed()
+                        with open(f"mobility_objects/speeds_{t}.log", "a") as f:
+                            f.write(f"{id},{internet_speed}\n")
                 else:
                     # 25 Mbps  LTE  https://www.lifewire.com/how-fast-is-4g-wireless-service-577566
                     # 1000Mbps Wi-Fi
-                    internet_speed = 1000
+                    internet_speed = select_speed()
+                    with open(f"mobility_objects/speeds_{t}.log", "a") as f:
+                        f.write(f"{id},{internet_speed}\n")
                 my_dict = {
                     "id": id,
                     "lat": lat,

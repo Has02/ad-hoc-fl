@@ -59,11 +59,18 @@ unsure of how this will affect the process. In the bash, change cuda limit per g
 
 TODO:
 
-- [ ] Figure out how to use num_workers in the dataloader
+- [x] Figure out how to use num_workers in the dataloader
+  - Allen recommends between 1 and 2
 - [x] Figure out how to set the number of rounds, the default is 744, idk how to reduce that yet:
   - You can change the _myrange_ variable in [cloud.py] to reduce the number of rounds, default is the number of timesteps in a day for the mobility data, which is 744 rounds.
 - [ ] Add networkx and create a graph of the devices and their connections
 - [ ] Implement dropout, stragglers, and battery life
+
+Notes from Meeting:
+
+- [ ] Refine the upload speed slide, make three key points and make it more concise
+- [ ] Finalize how we model power, can use the communication energy model from the MOHAWK paper, find parameters to finalize the equation. Additionaly can add depletion for training time, but he's fine with that not being there.
+- [ ] To simulate node dropout, we still have to finish the training and add it to the t.join in the cloud. To dropout, we just won't include the training results in the aggregation. But definitely finish training it each time anyway or we'll have hanging threads.
 
 ## 5. Run experiments
 

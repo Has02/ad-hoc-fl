@@ -1,4 +1,5 @@
 from os import path
+import numpy as np
 import os
 import socket
 import torch
@@ -312,7 +313,12 @@ class Device:
             )
             filesize += myf
             if self.log_comm_time:
-                comm_time += time.time() - start_time
+                add_time = time.time() - start_time
+                is_slow = np.random.choice([True, False], p=[0.2, 0.8])
+                if is_slow:
+                    comm_time += add_time * 1.2
+                else:
+                    comm_time += add_time
         after_train_filesize = filesize
         after_train_comm_time = comm_time
         close_connection(connection=self.connection, verbose=self.verbose)
