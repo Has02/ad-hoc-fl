@@ -8,6 +8,7 @@ import json
 import pickle
 from models.get_model import get_model
 import operator
+from battery import init_battery, reduce_battery
 from utils import (
     connect,
     receive_msg,
@@ -316,6 +317,9 @@ class Cloud:
                     f"Using: {mtype}_{mobility_devices}dev_{aps}ap_wifi_lte_100m_s{seed}_nonmobility.pkl"
                 )
                 mobility_data_filt = pickle.load(f)
+                for d in mobility_data_filt:
+                    d['phone'], d['battery'] = init_battery()
+                    d['is_dead'] = False
             t = list(mobility_data_filt.keys())
             myrange = range(len(t))
 
@@ -719,7 +723,9 @@ class Cloud:
             next_available_devices_idx = []
             for d in mobility_data_filt[t[t_idx]]:
                 if ap_option == "hierfavg":
-                    if d["internet_speed"] >= 0:
+                    # decrement battery 
+                    d['battery'] = reduce_battery(d['phone'], d['battery'], d['training_time'])
+                    if d["internet_speed"] >= 0 and d['battery'] > 0:
                         if d["device_idx"] in available_devices_idx:
                             next_available_devices.append(d)
                             next_available_devices_idx.append(d["device_idx"])
