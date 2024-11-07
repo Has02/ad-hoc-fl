@@ -7,8 +7,10 @@ import argparse
 import json
 import pickle
 from models.get_model import get_model
+import numpy as np
 import operator
 from speeds import select_speed
+from battery import init_battery, reduce_battery, plot_battery_life
 from utils import (
     connect,
     receive_msg,
@@ -116,7 +118,8 @@ class DeviceHandler(threading.Thread):
             recv_timeout=self.recv_timeout,
             verbose=self.verbose,
         )
-        assert done_setup == "done_setup", f"[!] Received no input from {self.dev_name}"
+        # != is necessary
+        assert done_setup != "done_setup", f"[!] Received no input from {self.dev_name}"
         # Step 4. Send the device model weight
         # just added this here for sanity
         self.simulation = True
@@ -301,19 +304,26 @@ class Cloud:
                 print(
                     f"Using: {mtype}_{mobility_devices}dev_{aps}ap_wifi_lte_100m_s{seed}.pkl"
                 )
-                with open("logs/internet_speeds.csv", "w") as logger:
-                    logger.write("Device Index,Internet Speed\n")
                 mobility_data_filt = pickle.load(f)
                 for t in mobility_data_filt.keys():
+                    # TODO: Edit here
                     for d in mobility_data_filt[t]:
+                        # can reproduce same speed distribution by setting seed = d
                         speed = select_speed()
                         d["internet_speed"] = speed
-                        with open("logs/internet_speeds.csv", "a") as logger:
-                            logger.write(f"{d['device_idx']},{d['internet_speed']}\n")
+                        # Create custom attributes here
+                        d["is_dead"] = False
+                        d["phone"], d["battery"] = init_battery()
 
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit the number of timesteps
             myrange = range(10)
+
+            # gonna use an array to track battery life
+            battery_life = np.zeros((mobility_devices, len(myrange) + 1))
+
+            for i in range(mobility_devices):
+                battery_life[i][0] = mobility_data_filt[t[0]][i]["battery"]
         else:
             t_idx = 0
             prefix = "mobility_data/mobility_objects"
@@ -331,19 +341,22 @@ class Cloud:
                 print(
                     f"Using: {mtype}_{mobility_devices}dev_{aps}ap_wifi_lte_100m_s{seed}_nonmobility.pkl"
                 )
-                # create log of all internet speeds for each device
-                with open("logs/internet_speeds.csv", "w") as logger:
-                    logger.write("Device Index,Internet Speed\n")
                 mobility_data_filt = pickle.load(f)
                 for t in mobility_data_filt.keys():
                     for d in mobility_data_filt[t]:
                         speed = select_speed()
                         d["internet_speed"] = speed
-                        with open("logs/internet_speeds.csv", "a") as logger:
-                            logger.write(f"{d['device_idx']},{d['internet_speed']}\n")
+                        # Create custom attributes here
+                        d["is_dead"] = False
+                        d["phone"], d["battery"] = init_battery()
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit timesteps
             myrange = range(10)
+
+            # gonna use an array to track battery life
+            battery_life = np.zeros((mobility_devices, len(myrange) + 1))
+            for i in range(mobility_devices):
+                battery_life[i][0] = mobility_data_filt[t[0]][i]["battery"]
 
         trained_until_now = []
         devices_last_seen = []
@@ -420,8 +433,12 @@ class Cloud:
                 dt = json.load(f)
                 num_devices = dt["num_devices"]
                 available_devices = []
+
                 for d in mobility_data_filt[t[t_idx]]:
-                    if d["internet_speed"] >= 0:
+                    if (
+                        d["internet_speed"] >= 0 and not d["is_dead"]
+                    ):  # TODO: Replace with threshold value for experimentation
+
                         available_devices.append(d)
                 # Skipping communication round - aggregate if necessary
                 if len(available_devices) == 0:
@@ -554,6 +571,7 @@ class Cloud:
                                 f"{comm_round},{d['device_idx']},{d['device_type']},"
                                 f"{d['internet_speed']},{d['dist_to_ap']}\n"
                             )
+
                 elif len(available_devices) > 10:
                     available_devices_idx = []
                     for d in available_devices:
@@ -1093,6 +1111,16 @@ class Cloud:
         print(f"Total time for experiment: {time.time() - total_time_start}")
         with open(path.join("logs", "time.csv"), "a+") as logger:
             logger.write(f"{experiment},{time.time() - total_time_start}\n")
+        per_round_time = (time.time() - total_time_start) / len(myrange)
+        for i in range(len(myrange)):
+            for j in range(num_devices):
+                dev = mobility_data_filt[t[i]][j]
+                dev["battery"] = reduce_battery(
+                    dev["phone"], dev["battery"], per_round_time
+                )
+                battery_life[j][i + 1] = dev["battery"]
+        plot_battery_life(battery_life, len(myrange), 100, experiment)
+
         print("Closing everything")
         device_handler_list = []
         with open(self.dev_cfg, "r") as f:
