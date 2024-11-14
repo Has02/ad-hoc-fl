@@ -72,6 +72,16 @@ Notes from Meeting:
 - [ ] Finalize how we model power, can use the communication energy model from the MOHAWK paper, find parameters to finalize the equation. Additionaly can add depletion for training time, but he's fine with that not being there.
 - [ ] To simulate node dropout, we still have to finish the training and add it to the t.join in the cloud. To dropout, we just won't include the training results in the aggregation. But definitely finish training it each time anyway or we'll have hanging threads.
 - [ ] The assert is not is supposed to be like that, we need to change it back to != in the _run_ function
+- [ ] Refresh in minds the setup or recap of M1 or if we changed a lot just re-establish it (1 slide)
+- [ ] Have results of testing
+- [ ] Compare dropout performance with baseline of no dropout
+- [ ] For dropout random for M2 and to simmulate what would happen given battery lives and unstable connections, market it in terms of unstable connections
+- [ ] Reference above situations in battery depletion and communication-based dropout in the methodology section
+- [ ] If battery level is beyond a threshold device drops or if comm time takes too long (over time threshold), then device also drops
+- [ ] If we do not get to simulate the death by comm bandwidth and battery, mention that we will have it in the report but not in this specific implementation
+- [ ] Have a setting slide before methodology, mention how devices are connected, testing parameters, how many look every comm round, dataset, model, mention iid or non-iid dataset. Mention type of dataset
+- [ ] Have a results page and a future works page (globally one does really well and one does much worse). Mention what we want to explore in M3. Mention at least 1 technique to leverage in M3. FIGURE OUT HOW TO DO IT
+- [ ] X axis (comm round pref 50), Y axis (global model accuracy on MNIST)
 
 ## 5. Run experiments
 
