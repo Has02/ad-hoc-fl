@@ -57,6 +57,8 @@ is `home/user/MOHAWK/files` then in `exp0.bash` use `cloud_path="files"`.
 So the train function in utils has a dataloader that causes a deadlock for num_workers > 0. I set it to 0 but I'm
 unsure of how this will affect the process. In the bash, change cuda limit per gpu to however many devices you're training unless you have more than one GPU. My default is 10 devices on 100 users and 100 aps, re-run the data_prepare with 100 devices and generate_dataset with num users as 100 to make the default work. try to experiment with how many devices you can run on your machine. Look into how the num_workers actually works since I think it affects the distributed learning process.
 
+Battery Note: The battery functions are in battery.py. It is largely dependent on the training time on the devices, but that can differentiate based on what you're simulating on. I have a scaling factor in the _battery.py_ file just to decrement more or less battery depending on training time. It is hardcoded for our default 100 devices.
+
 TODO:
 
 - [x] Figure out how to use num_workers in the dataloader
@@ -64,14 +66,15 @@ TODO:
 - [x] Figure out how to set the number of rounds, the default is 744, idk how to reduce that yet:
   - You can change the _myrange_ variable in [cloud.py] to reduce the number of rounds, default is the number of timesteps in a day for the mobility data, which is 744 rounds.
 - [ ] Add networkx and create a graph of the devices and their connections
-- [ ] Implement dropout, stragglers, and battery life
+- [ ] Implement dropout
+- [x] Implement battery model
+- [ ] Implement network viusalization
 
 Notes from Meeting:
 
-- [ ] Refine the upload speed slide, make three key points and make it more concise
-- [ ] Finalize how we model power, can use the communication energy model from the MOHAWK paper, find parameters to finalize the equation. Additionaly can add depletion for training time, but he's fine with that not being there.
+- [x] Refine the upload speed slide, make three key points and make it more concise
+- [x] Finalize how we model power, can use the communication energy model from the MOHAWK paper, find parameters to finalize the equation. Additionaly can add depletion for training time, but he's fine with that not being there.
 - [ ] To simulate node dropout, we still have to finish the training and add it to the t.join in the cloud. To dropout, we just won't include the training results in the aggregation. But definitely finish training it each time anyway or we'll have hanging threads.
-- [ ] The assert is not is supposed to be like that, we need to change it back to != in the _run_ function
 
 ## 5. Run experiments
 

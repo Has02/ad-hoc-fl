@@ -27,6 +27,7 @@ Then just multiply Pi by training time to get the power consumption for that rou
 import numpy as np
 
 battery_life = np.random.uniform(0.6, 0.7, 1000)
+scaling_factor = 150.0
 
 """
 Dictionary of phone models:
@@ -60,13 +61,18 @@ def init_battery(seed=None):
 
 
 def reduce_battery(phone, battery, training_time):
-    model = phone_models[phone]
+    try:
+        model = phone_models[phone]
+    except:
+        model = phone_models["apple_iphone_15"]
     power_consumption = (
         model["baseline_power"]
         + model["cores"] * model["power_coefficient"] * model["frequency"]
     )
     current_wh = battery * model["battery_capacity"]
-    current_wh -= power_consumption * (training_time / 3600)
+    if power_consumption * (scaling_factor * (training_time / 3600)) > current_wh:
+        return 0
+    current_wh -= power_consumption * (scaling_factor * (training_time / 3600))
     battery = current_wh / model["battery_capacity"]
     if battery < 0:
         battery = 0
@@ -97,7 +103,7 @@ if __name__ == "__main__":
         phone, b = init_battery()
         battery.append(b)
         for i in range(10):
-            b = reduce_battery(phone, b, 50)
+            b = reduce_battery(phone, b, 8)
             battery.append(b)
     battery = np.array(battery).reshape(100, 11)
     plt.plot(battery.T, alpha=0.5)

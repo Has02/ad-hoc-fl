@@ -231,6 +231,7 @@ def go_through_all_clients(
             "long": long,
             "AP_name": ap_name,
             "dist_to_ap": dist,
+            "battery": 100,
             "internet_speed": internet_speed,
         }
 

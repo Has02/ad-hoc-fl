@@ -280,7 +280,7 @@ class Device:
             start_time = time.time()
         send_msg(
             connection=self.connection,
-            msg=f"done_training;{train_time}",
+            msg=f"done_training;{train_time};{self.dev_idx};{self.model_filename}",
             verbose=self.verbose,
         )
         filesize += getsizeof(f"done_training;{train_time}")

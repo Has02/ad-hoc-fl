@@ -28,6 +28,18 @@ from fl_utils import aggregate_cos, aggregate_avg
 import time
 
 preferred_device = "cpu"
+# train times for all 100 devices, should be 100 lists and push the time to the corresponding list
+train_times = [[] for _ in range(100)]
+batteries = [[] for _ in range(100)]
+phones = []
+for i in range(100):
+    phone, battery = init_battery()
+    phones.append(phone)
+    batteries[i].append(battery)
+
+max_round_times = np.zeros(10)
+log_round = 0
+info_dump = {}
 
 
 class DeviceHandler(threading.Thread):
@@ -119,7 +131,7 @@ class DeviceHandler(threading.Thread):
             verbose=self.verbose,
         )
         # != is necessary
-        assert done_setup != "done_setup", f"[!] Received no input from {self.dev_name}"
+        assert done_setup == "done_setup", f"[!] Received no input from {self.dev_name}"
         # Step 4. Send the device model weight
         # just added this here for sanity
         self.simulation = True
@@ -151,6 +163,18 @@ class DeviceHandler(threading.Thread):
             print("[!] ERROR not done training")
 
         self.train_time = received_data.split(";")[1]
+        print(received_data.split(";"))
+        dev_time = float(received_data.split(";")[1])
+        train_index = received_data.split(";")[2]
+        train_index = int(train_index)
+        batteries[train_index].append(
+            reduce_battery(
+                "apple_iphone_15",
+                batteries[train_index][len(batteries[train_index]) - 1],
+                dev_time,
+            )
+        )
+        train_times[train_index].append(self.train_time)
 
         # Step 6. Get the weights file from the server
         if not self.simulation:
@@ -176,6 +200,8 @@ class Cloud:
 
     def federated_learning(self):
         total_time_start = time.time()
+        round_time = time.time()
+        times = np.zeros(10)
 
         with open(self.cloud_cfg, "r") as cfg:
             dat = json.load(cfg)
@@ -366,17 +392,13 @@ class Cloud:
                     f"Communication Round,Device Index,AP Name,Device Type,"
                     f"Communication Speedup, Distance to AP\n"
                 )
-            # log for devices used in the round
-            with open(f"logs/devices_{experiment}.csv", "w") as logger:
-                logger.write(
-                    f"Communication Round,Device Index,Device Type,"
-                    f"Communication Speedup, Distance to AP\n"
-                )
+
             if ap_option == "use_only_trained_aps":
                 for idx in range(num_users):
                     devices_last_seen.append({"comm_round": -1, "aggregated": False})
 
         for comm_round in myrange:
+            log_round = comm_round
             print(
                 f"Mobility: {mobility}, cosine: {cosine}, hierarchical: {hierarchical}, "
                 f"total devices: {mobility_devices}, AP_OPTION: {ap_option}"
@@ -536,6 +558,18 @@ class Cloud:
                             path.join(cloud_path, f"global_weights_{comm_round}.pth"),
                         )
 
+                    round_time = time.time() - round_time
+                    times[t_idx] = round_time
+                    for i in range(mobility_devices):
+                        battery_life[i][comm_round + 1] = reduce_battery(
+                            mobility_data_filt[t[t_idx]][i]["phone"],
+                            mobility_data_filt[t[t_idx]][i]["battery"],
+                            round_time,
+                        )
+                        mobility_data_filt[t[t_idx]][i]["battery"] = battery_life[i][
+                            comm_round + 1
+                        ]
+
                     loss_test, acc_test = test(
                         model=net_glob,
                         loss_func=loss_func,
@@ -558,19 +592,13 @@ class Cloud:
                     print(
                         f"CommRound: {comm_round}; Accuracy: {acc_test}; Loss: {loss_test}"
                     )
+
                     t_idx += 1
                     continue
                 elif len(available_devices) <= num_devices:
                     available_devices_idx = []
                     for d in available_devices:
                         available_devices_idx.append(d["device_idx"])
-                    # log for devices used in the round
-                    with open(f"logs/devices_{experiment}.csv", "a+") as logger:
-                        for d in available_devices:
-                            logger.write(
-                                f"{comm_round},{d['device_idx']},{d['device_type']},"
-                                f"{d['internet_speed']},{d['dist_to_ap']}\n"
-                            )
 
                 elif len(available_devices) > 10:
                     available_devices_idx = []
@@ -1111,15 +1139,19 @@ class Cloud:
         print(f"Total time for experiment: {time.time() - total_time_start}")
         with open(path.join("logs", "time.csv"), "a+") as logger:
             logger.write(f"{experiment},{time.time() - total_time_start}\n")
-        per_round_time = (time.time() - total_time_start) / len(myrange)
-        for i in range(len(myrange)):
-            for j in range(num_devices):
-                dev = mobility_data_filt[t[i]][j]
-                dev["battery"] = reduce_battery(
-                    dev["phone"], dev["battery"], per_round_time
-                )
-                battery_life[j][i + 1] = dev["battery"]
-        plot_battery_life(battery_life, len(myrange), 100, experiment)
+
+        plot_battery_life(batteries, len(myrange), 100, experiment)
+        # savetrain times
+        # add headers: experiment,train_time1,train_time2,...,train_timeN
+
+        with open(path.join("logs", "round_times.csv"), "a+") as logger:
+            logger.write(f"{experiment},")
+            for i in range(len(train_times)):
+                logger.write(f"[")
+                for j in range(len(train_times[i])):
+                    logger.write(f"{train_times[i][j]},")
+                logger.write(f"],")
+            logger.write("\n")
 
         print("Closing everything")
         device_handler_list = []
