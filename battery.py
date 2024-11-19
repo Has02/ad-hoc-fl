@@ -27,7 +27,7 @@ Then just multiply Pi by training time to get the power consumption for that rou
 import numpy as np
 
 battery_life = np.random.uniform(0.6, 0.7, 1000)
-scaling_factor = 150.0
+scaling_factor = 180.0
 
 """
 Dictionary of phone models:

@@ -36,11 +36,12 @@ def select_speed(seed=None):
 
 
 # Test the function
-# import matplotlib.pyplot as plt
+if __name__ == "__main__":
+    import matplotlib.pyplot as plt
 
-# speeds = [select_speed() for i in range(1000)]
-# plt.hist(speeds, bins=20)
-# plt.xlabel("Speed (Mbps)")
-# plt.ylabel("Frequency")
-# plt.title("Upload Speeds")
-# plt.show()
+    speeds = [select_speed() for i in range(100)]
+    plt.hist(speeds, bins=20)
+    plt.xlabel("Speed (Mbps)")
+    plt.ylabel("Frequency")
+    plt.title("Upload Speeds")
+    plt.show()

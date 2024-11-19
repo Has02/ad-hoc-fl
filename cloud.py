@@ -28,18 +28,21 @@ from fl_utils import aggregate_cos, aggregate_avg
 import time
 
 preferred_device = "cpu"
-# train times for all 100 devices, should be 100 lists and push the time to the corresponding list
+"""
+A bunch of global variables to keep track of new additions to the simulation
+"""
 train_times = [[] for _ in range(100)]
 batteries = [[] for _ in range(100)]
+speeds = [select_speed() for _ in range(100)]
 phones = []
 for i in range(100):
     phone, battery = init_battery()
     phones.append(phone)
     batteries[i].append(battery)
-
-max_round_times = np.zeros(10)
-log_round = 0
-info_dump = {}
+batteries[0][0] = 0.20  # adding here to simulate a dropout
+drop_outs = [False for _ in range(100)]
+is_slow = [np.random.choice(["True", "False"], p=[0.2, 0.8]) for _ in range(100)]
+straggler_threshold = 0
 
 
 class DeviceHandler(threading.Thread):
@@ -163,17 +166,21 @@ class DeviceHandler(threading.Thread):
             print("[!] ERROR not done training")
 
         self.train_time = received_data.split(";")[1]
+        if is_slow[self.dev_idx] == "True":
+            self.train_time = float(self.train_time) * 1.2
         print(received_data.split(";"))
         dev_time = float(received_data.split(";")[1])
         train_index = received_data.split(";")[2]
         train_index = int(train_index)
-        batteries[train_index].append(
-            reduce_battery(
-                "apple_iphone_15",
-                batteries[train_index][len(batteries[train_index]) - 1],
-                dev_time,
-            )
+        battery_percent = reduce_battery(
+            "apple_iphone_15",
+            batteries[train_index][len(batteries[train_index]) - 1],
+            dev_time,
         )
+        batteries[train_index].append(battery_percent)
+        if battery_percent == 0:
+            drop_outs[train_index] = "True"
+            print(f"Device {train_index} has dropped out")
         train_times[train_index].append(self.train_time)
 
         # Step 6. Get the weights file from the server
@@ -331,25 +338,11 @@ class Cloud:
                     f"Using: {mtype}_{mobility_devices}dev_{aps}ap_wifi_lte_100m_s{seed}.pkl"
                 )
                 mobility_data_filt = pickle.load(f)
-                for t in mobility_data_filt.keys():
-                    # TODO: Edit here
-                    for d in mobility_data_filt[t]:
-                        # can reproduce same speed distribution by setting seed = d
-                        speed = select_speed()
-                        d["internet_speed"] = speed
-                        # Create custom attributes here
-                        d["is_dead"] = False
-                        d["phone"], d["battery"] = init_battery()
 
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit the number of timesteps
             myrange = range(10)
 
-            # gonna use an array to track battery life
-            battery_life = np.zeros((mobility_devices, len(myrange) + 1))
-
-            for i in range(mobility_devices):
-                battery_life[i][0] = mobility_data_filt[t[0]][i]["battery"]
         else:
             t_idx = 0
             prefix = "mobility_data/mobility_objects"
@@ -368,21 +361,9 @@ class Cloud:
                     f"Using: {mtype}_{mobility_devices}dev_{aps}ap_wifi_lte_100m_s{seed}_nonmobility.pkl"
                 )
                 mobility_data_filt = pickle.load(f)
-                for t in mobility_data_filt.keys():
-                    for d in mobility_data_filt[t]:
-                        speed = select_speed()
-                        d["internet_speed"] = speed
-                        # Create custom attributes here
-                        d["is_dead"] = False
-                        d["phone"], d["battery"] = init_battery()
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit timesteps
             myrange = range(10)
-
-            # gonna use an array to track battery life
-            battery_life = np.zeros((mobility_devices, len(myrange) + 1))
-            for i in range(mobility_devices):
-                battery_life[i][0] = mobility_data_filt[t[0]][i]["battery"]
 
         trained_until_now = []
         devices_last_seen = []
@@ -457,9 +438,7 @@ class Cloud:
                 available_devices = []
 
                 for d in mobility_data_filt[t[t_idx]]:
-                    if (
-                        d["internet_speed"] >= 0 and not d["is_dead"]
-                    ):  # TODO: Replace with threshold value for experimentation
+                    if d["internet_speed"] >= 0:
 
                         available_devices.append(d)
                 # Skipping communication round - aggregate if necessary
@@ -560,15 +539,6 @@ class Cloud:
 
                     round_time = time.time() - round_time
                     times[t_idx] = round_time
-                    for i in range(mobility_devices):
-                        battery_life[i][comm_round + 1] = reduce_battery(
-                            mobility_data_filt[t[t_idx]][i]["phone"],
-                            mobility_data_filt[t[t_idx]][i]["battery"],
-                            round_time,
-                        )
-                        mobility_data_filt[t[t_idx]][i]["battery"] = battery_life[i][
-                            comm_round + 1
-                        ]
 
                     loss_test, acc_test = test(
                         model=net_glob,
@@ -978,7 +948,7 @@ class Cloud:
                                 )
                             else:
                                 w_ap = aggregate_avg(
-                                    local_weights=local_weights[ap_name]
+                                    local_weights=local_weights[ap_name],
                                 )
 
                             myaps[ap_name].load_state_dict(w_ap, strict=False)
@@ -1140,10 +1110,10 @@ class Cloud:
         with open(path.join("logs", "time.csv"), "a+") as logger:
             logger.write(f"{experiment},{time.time() - total_time_start}\n")
 
+        # Plot battery life
         plot_battery_life(batteries, len(myrange), 100, experiment)
-        # savetrain times
-        # add headers: experiment,train_time1,train_time2,...,train_timeN
 
+        # Saving round times
         with open(path.join("logs", "round_times.csv"), "a+") as logger:
             logger.write(f"{experiment},")
             for i in range(len(train_times)):
