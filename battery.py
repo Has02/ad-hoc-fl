@@ -82,7 +82,14 @@ def reduce_battery(phone, battery, training_time):
 def plot_battery_life(battery_life, num_rounds, num_devices, experiment_name):
     import matplotlib.pyplot as plt
 
-    battery = np.array(battery_life).reshape(num_devices, num_rounds + 1)
+    # Pad battery_life to ensure all devices have data for all rounds
+    max_rounds = num_rounds + 1
+    padded_battery = [
+        device_battery + [device_battery[-1]] * (max_rounds - len(device_battery))
+        for device_battery in battery_life
+    ]
+
+    battery = np.array(padded_battery).reshape(num_devices, max_rounds)
     plt.plot(battery.T, alpha=0.5)
     plt.plot(battery.mean(axis=0), color="black")
     plt.xlabel("Communication Round")

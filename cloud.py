@@ -26,8 +26,9 @@ from utils import (
 )
 from fl_utils import aggregate_cos, aggregate_avg
 import time
+import random
 
-preferred_device = "cpu"
+preferred_device = "cuda" if torch.cuda.is_available() else "cpu"
 """
 A bunch of global variables to keep track of new additions to the simulation
 """
@@ -203,7 +204,12 @@ class Cloud:
         self.cloud_cfg = cloud_cfg
         self.dev_cfg = dev_cfg
         self.seed = seed
+        self.dropout_rate = 0.1
         seed_everything(self.seed)
+
+    def apply_dropout(devices, dropout_rate):
+        num_to_drop = int(len(devices)*dropout_rate)
+        return random.sample(devices, len(devices)-num_to_drop)
 
     def federated_learning(self):
         total_time_start = time.time()
@@ -363,7 +369,7 @@ class Cloud:
                 mobility_data_filt = pickle.load(f)
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit timesteps
-            myrange = range(10)
+            myrange = range(50)
 
         trained_until_now = []
         devices_last_seen = []
@@ -438,7 +444,7 @@ class Cloud:
                 available_devices = []
 
                 for d in mobility_data_filt[t[t_idx]]:
-                    if d["internet_speed"] >= 0:
+                    if d["internet_speed"] >= 0 and np.random.rand() > 0.5:
 
                         available_devices.append(d)
                 # Skipping communication round - aggregate if necessary
