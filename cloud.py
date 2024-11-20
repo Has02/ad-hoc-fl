@@ -39,10 +39,10 @@ for i in range(100):
     phone, battery = init_battery()
     phones.append(phone)
     batteries[i].append(battery)
-batteries[0][0] = 0.20  # adding here to simulate a dropout
+batteries[1][0] = 0.40  # adding here to simulate a dropout
 drop_outs = [False for _ in range(100)]
 is_slow = [np.random.choice(["True", "False"], p=[0.2, 0.8]) for _ in range(100)]
-straggler_threshold = 0
+straggler_threshold = 5.0
 
 
 class DeviceHandler(threading.Thread):
@@ -166,14 +166,17 @@ class DeviceHandler(threading.Thread):
             print("[!] ERROR not done training")
 
         self.train_time = received_data.split(";")[1]
-        if is_slow[self.dev_idx] == "True":
-            self.train_time = float(self.train_time) * 1.2
+        if (
+            is_slow[self.dev_idx] == "True"
+            or speeds[self.dev_idx] < straggler_threshold
+        ):
+            self.train_time = float(self.train_time) * 1.2  ## TODO: Change back to 1.2
         print(received_data.split(";"))
         dev_time = float(received_data.split(";")[1])
         train_index = received_data.split(";")[2]
         train_index = int(train_index)
         battery_percent = reduce_battery(
-            "apple_iphone_15",
+            phones[train_index],
             batteries[train_index][len(batteries[train_index]) - 1],
             dev_time,
         )
@@ -208,7 +211,7 @@ class Cloud:
     def federated_learning(self):
         total_time_start = time.time()
         round_time = time.time()
-        times = np.zeros(10)
+        times = np.zeros(2)
 
         with open(self.cloud_cfg, "r") as cfg:
             dat = json.load(cfg)
@@ -341,7 +344,7 @@ class Cloud:
 
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit the number of timesteps
-            myrange = range(10)
+            myrange = range(50)
 
         else:
             t_idx = 0
@@ -363,7 +366,7 @@ class Cloud:
                 mobility_data_filt = pickle.load(f)
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit timesteps
-            myrange = range(10)
+            myrange = range(50)
 
         trained_until_now = []
         devices_last_seen = []
@@ -455,11 +458,15 @@ class Cloud:
                             ap_weights = []
                             print(f"Trained until now: {len(trained_until_now)}")
                             for ap_name in trained_until_now:
-                                ap_weights.append(
-                                    myaps[ap_name]
-                                    .to(torch.device(preferred_device))
-                                    .state_dict()
-                                )
+                                ap_index = int(ap_name[2:])
+                                if drop_outs[ap_index] == False:
+                                    ap_weights.append(
+                                        myaps[ap_name]
+                                        .to(torch.device(preferred_device))
+                                        .state_dict()
+                                    )
+                                else:
+                                    print(f"Device {ap_index} has dropped out")
 
                             if len(ap_weights) > 0:
                                 if cosine:
@@ -811,11 +818,15 @@ class Cloud:
                         ap_weights = []
                         print(f"Trained until now: {len(trained_until_now)}")
                         for ap_name in trained_until_now:
-                            ap_weights.append(
-                                myaps[ap_name]
-                                .to(torch.device(preferred_device))
-                                .state_dict()
-                            )
+                            ap_index = int(ap_name[2:])
+                            if drop_outs[ap_index] == False:
+                                ap_weights.append(
+                                    myaps[ap_name]
+                                    .to(torch.device(preferred_device))
+                                    .state_dict()
+                                )
+                            else:
+                                print(f"Device {ap_index} has dropped out")
 
                         if len(ap_weights) > 0:
                             if cosine:
@@ -937,6 +948,7 @@ class Cloud:
                                 local_weights[elem["AP_name"][0]].append(w_local)
 
                     for ap_name in aplist:
+                        ap_index = int(ap_name[2:])
                         if len(local_weights[ap_name]) > 0:
                             if cosine:
                                 w_ap = aggregate_cos(
@@ -947,9 +959,14 @@ class Cloud:
                                     local_weights=local_weights[ap_name],
                                 )
                             else:
-                                w_ap = aggregate_avg(
-                                    local_weights=local_weights[ap_name],
-                                )
+                                if drop_outs[ap_index] == False:
+                                    w_ap = aggregate_avg(
+                                        local_weights=local_weights[ap_name],
+                                    )
+                                else:
+                                    print(
+                                        f"Device {ap_index} has dropped out AP WEIGHTS"
+                                    )
 
                             myaps[ap_name].load_state_dict(w_ap, strict=False)
                             torch.save(
@@ -974,11 +991,15 @@ class Cloud:
                         ap_weights = []
                         print(f"Trained until now: {len(trained_until_now)}")
                         for ap_name in trained_until_now:
-                            ap_weights.append(
-                                myaps[ap_name]
-                                .to(torch.device(preferred_device))
-                                .state_dict()
-                            )
+                            ap_index = int(ap_name[2:])
+                            if drop_outs[ap_index] == False:
+                                ap_weights.append(
+                                    myaps[ap_name]
+                                    .to(torch.device(preferred_device))
+                                    .state_dict()
+                                )
+                            else:
+                                print(f"Device {ap_index} has dropped out")
 
                         if len(ap_weights) > 0:
                             if cosine:
