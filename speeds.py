@@ -40,8 +40,12 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     speeds = [select_speed() for i in range(100)]
-    plt.hist(speeds, bins=20)
-    plt.xlabel("Speed (Mbps)")
+    figure = plt.figure(figsize=(10, 6))
+    figure.set_dpi(120)
+    figure.set_size_inches(10, 6)
+    plt.hist(speeds, bins=20, color="skyblue", edgecolor="black")
+    plt.xlabel("Upload Speed (Mbps)")
     plt.ylabel("Frequency")
-    plt.title("Upload Speeds")
+    plt.title("Distribution of Upload Speeds")
+    plt.grid()
     plt.show()

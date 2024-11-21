@@ -27,7 +27,7 @@ Then just multiply Pi by training time to get the power consumption for that rou
 import numpy as np
 
 battery_life = np.random.uniform(0.6, 0.7, 1000)
-scaling_factor = 180.0
+scaling_factor = 25.0
 
 """
 Dictionary of phone models:
@@ -43,6 +43,20 @@ phone_models = {
         "power_coefficient": 0.1,
         "baseline_power": 0.5,
         "frequency": 2.5,
+    },
+    "samsung_galaxy_s22": {
+        "battery_capacity": 10.0,
+        "cores": 8,
+        "power_coefficient": 0.1,
+        "baseline_power": 0.7,
+        "frequency": 2.5,
+    },
+    "google_pixel_7": {
+        "battery_capacity": 10.0,
+        "cores": 8,
+        "power_coefficient": 0.11,
+        "baseline_power": 0.6,
+        "frequency": 1.8,
     },
 }
 
@@ -64,7 +78,7 @@ def reduce_battery(phone, battery, training_time):
     try:
         model = phone_models[phone]
     except:
-        model = phone_models["apple_iphone_15"]
+        model = np.random.choice(list(phone_models.values()))
     power_consumption = (
         model["baseline_power"]
         + model["cores"] * model["power_coefficient"] * model["frequency"]
@@ -109,13 +123,14 @@ if __name__ == "__main__":
     for i in range(100):
         phone, b = init_battery()
         battery.append(b)
-        for i in range(10):
-            b = reduce_battery(phone, b, 8)
+        for i in range(50):
+            b = reduce_battery(phone, b, 7.0)
             battery.append(b)
-    battery = np.array(battery).reshape(100, 11)
+    battery = np.array(battery).reshape(100, 51)
     plt.plot(battery.T, alpha=0.5)
     plt.plot(battery.mean(axis=0), color="black")
     plt.xlabel("Communication Round")
     plt.ylabel("Battery Life")
     plt.title("Battery Life Reduction")
+    plt.grid()
     plt.show()
