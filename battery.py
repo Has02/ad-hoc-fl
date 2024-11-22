@@ -45,16 +45,16 @@ phone_models = {
         "frequency": 2.5,
     },
     "samsung_galaxy_s22": {
-        "battery_capacity": 10.0,
+        "battery_capacity": 12.21,
         "cores": 8,
         "power_coefficient": 0.1,
         "baseline_power": 0.7,
-        "frequency": 2.5,
+        "frequency": 1.785,
     },
     "google_pixel_7": {
         "battery_capacity": 10.0,
         "cores": 8,
-        "power_coefficient": 0.11,
+        "power_coefficient": 0.1,
         "baseline_power": 0.6,
         "frequency": 1.8,
     },
@@ -120,10 +120,12 @@ if __name__ == "__main__":
             b = reduce_battery(phone, b, 7.0)
             battery.append(b)
     battery = np.array(battery).reshape(100, 51)
+    ax = plt.gca()
+    ax.set_ylim([0, 1])
     plt.plot(battery.T, alpha=0.5)
     plt.plot(battery.mean(axis=0), color="black")
     plt.xlabel("Communication Round")
     plt.ylabel("Battery Life")
-    plt.title("Battery Life Reduction")
+    plt.title("Battery Life Reduction of 100 Devices")
     plt.grid()
     plt.show()
