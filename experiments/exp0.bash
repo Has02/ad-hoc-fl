@@ -7,8 +7,13 @@ OLDIFS=$IFS
 cuda_limit_per_gpu=100
 num_devices=15
 PORT=10000
+<<<<<<< HEAD
+e=8
+cloud_path="C://Users/nickg/Workspace/RWML/ad-hoc-fl/files/"
+=======
 e=2
 cloud_path="C://Users/nickg/Workspace/RWML/ad-hoc-fl/files/"
+>>>>>>> 9d746e6fcc8b1a0b0823c198dc727091748cee4d
 device_type="local"
 dataset_name="mnist"
 model_name="conv5"
