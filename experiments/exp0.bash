@@ -7,13 +7,7 @@ OLDIFS=$IFS
 cuda_limit_per_gpu=100
 num_devices=15
 PORT=10000
-<<<<<<< HEAD
-e=8
-cloud_path="C://Users/nickg/Workspace/RWML/ad-hoc-fl/files/"
-=======
-e=2
-cloud_path="C://Users/nickg/Workspace/RWML/ad-hoc-fl/files/"
->>>>>>> 9d746e6fcc8b1a0b0823c198dc727091748cee4d
+cloud_path="C://Users/Has02/Documents/mlrwn/MOHAWK/files/"
 device_type="local"
 dataset_name="mnist"
 model_name="conv5"
@@ -23,13 +17,13 @@ seed=42
 declare -a elems1=(
 # Mobility | Cosine  | hierarchical | k2 | sigma | ap_option | train_batch_size
   "false false true 2 0.1 hierfavg 8" # HierFAVG
-  #"true true true 2 0.1 hierfavg 8" # MACFL
-  #"true true true 2 0.1 use_only_trained_aps 8" # MOHAWK
+  # "true true true 2 0.1 hierfavg 8" # MACFL
+  # "true true true 2 0.1 use_only_trained_aps 8" # MOHAWK
 )
 
 declare -a elems2=(
 # IID? | Learning rate | Momentum
-  "true 0.01 0.9" # IID
+  # "true 0.01 0.9" # IID
   "false 0.01 0.9" # Non-IID
 )
 

@@ -32,6 +32,7 @@ preferred_device = "cuda" if torch.cuda.is_available() else "cpu"
 """
 A bunch of global variables to keep track of new additions to the simulation
 """
+speed_threshold = 5.0
 train_times = [[] for _ in range(100)]
 batteries = [[] for _ in range(100)]
 speeds = [select_speed() for _ in range(100)]
@@ -217,7 +218,7 @@ class Cloud:
     def federated_learning(self):
         total_time_start = time.time()
         round_time = time.time()
-        times = np.zeros(2)
+        times = np.zeros(50)
 
         with open(self.cloud_cfg, "r") as cfg:
             dat = json.load(cfg)
@@ -447,8 +448,7 @@ class Cloud:
                 available_devices = []
 
                 for d in mobility_data_filt[t[t_idx]]:
-                    if d["internet_speed"] >= 0 and np.random.rand() > 0.5:
-
+                    if d["internet_speed"] >= 0:
                         available_devices.append(d)
                 # Skipping communication round - aggregate if necessary
                 if len(available_devices) == 0:
