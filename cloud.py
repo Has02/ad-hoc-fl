@@ -32,6 +32,7 @@ preferred_device = "cuda" if torch.cuda.is_available() else "cpu"
 """
 A bunch of global variables to keep track of new additions to the simulation
 """
+speed_threshold = 10.0
 train_times = [[] for _ in range(100)]
 batteries = [[] for _ in range(100)]
 speeds = [select_speed() for _ in range(100)]
@@ -217,7 +218,7 @@ class Cloud:
     def federated_learning(self):
         total_time_start = time.time()
         round_time = time.time()
-        times = np.zeros(2)
+        times = np.zeros(50)
 
         with open(self.cloud_cfg, "r") as cfg:
             dat = json.load(cfg)
@@ -350,7 +351,7 @@ class Cloud:
 
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit the number of timesteps
-            myrange = range(50)
+            myrange = range(10)
 
         else:
             t_idx = 0
@@ -372,7 +373,7 @@ class Cloud:
                 mobility_data_filt = pickle.load(f)
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit timesteps
-            myrange = range(50)
+            myrange = range(10)
 
         trained_until_now = []
         devices_last_seen = []
@@ -447,9 +448,13 @@ class Cloud:
                 available_devices = []
 
                 for d in mobility_data_filt[t[t_idx]]:
-                    if d["internet_speed"] >= 0 and np.random.rand() > 0.5:
-
+                    d["internet_speed"] = select_speed()
+                    if d["internet_speed"] >= speed_threshold:
                         available_devices.append(d)
+                        drop_outs[d["device_idx"]] = False  # Device is active
+                    else:
+                        drop_outs[d["device_idx"]] = True  # Device dropped out
+                        print(f"Device {d['device_idx']} excluded due to low speed: {d['internet_speed']} Mbps")
                 # Skipping communication round - aggregate if necessary
                 if len(available_devices) == 0:
                     print(
@@ -602,7 +607,7 @@ class Cloud:
                         next_available_devices = []
                         next_available_devices_idx = []
                         for d in mobility_data_filt[t[t_idx + 1]]:
-                            if d["internet_speed"] >= 0:
+                            if d["internet_speed"] >= 2:
                                 if d["device_idx"] in available_devices_idx:
                                     next_available_devices.append(d)
                                     next_available_devices_idx.append(d["device_idx"])

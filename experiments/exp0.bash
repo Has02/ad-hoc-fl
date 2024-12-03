@@ -18,8 +18,8 @@ seed=42
 declare -a elems1=(
 # Mobility | Cosine  | hierarchical | k2 | sigma | ap_option | train_batch_size
   "false false true 2 0.1 hierfavg 8" # HierFAVG
-  #"true true true 2 0.1 hierfavg 8" # MACFL
-  #"true true true 2 0.1 use_only_trained_aps 8" # MOHAWK
+  # "true true true 2 0.1 hierfavg 8" # MACFL
+  # "true true true 2 0.1 use_only_trained_aps 8" # MOHAWK
 )
 
 declare -a elems2=(
