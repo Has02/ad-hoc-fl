@@ -32,7 +32,7 @@ preferred_device = "cuda" if torch.cuda.is_available() else "cpu"
 """
 A bunch of global variables to keep track of new additions to the simulation
 """
-speed_threshold = 10.0
+speed_threshold = 5.0
 train_times = [[] for _ in range(100)]
 batteries = [[] for _ in range(100)]
 speeds = [select_speed() for _ in range(100)]
@@ -216,6 +216,7 @@ class Cloud:
         return random.sample(devices, len(devices)-num_to_drop)
 
     def federated_learning(self):
+        
         total_time_start = time.time()
         round_time = time.time()
         times = np.zeros(50)
@@ -271,7 +272,7 @@ class Cloud:
                 aplist = []
                 for ap_idx in range(0, aps):
                     aplist.append(f"AP{ap_idx}")
-
+        ap_dropouts = {ap_name: False for ap_name in aplist}
         if not os.path.exists(cloud_path):
             os.mkdir(cloud_path)
         if not os.path.exists("logs"):
@@ -351,7 +352,7 @@ class Cloud:
 
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit the number of timesteps
-            myrange = range(10)
+            myrange = range(50)
 
         else:
             t_idx = 0
@@ -373,7 +374,7 @@ class Cloud:
                 mobility_data_filt = pickle.load(f)
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit timesteps
-            myrange = range(10)
+            myrange = range(50)
 
         trained_until_now = []
         devices_last_seen = []
@@ -441,7 +442,16 @@ class Cloud:
                     os.remove(
                         path.join(cloud_path, f"global_weights_{comm_round - 2}.pth")
                     )
-
+            dropout_probability = 0.2  # 5% chance of AP dropout
+            recovery_probability = 0.2  # 5% chance of AP recovery
+            for ap_name in aplist:
+                if not ap_dropouts[ap_name] and random.random() < dropout_probability:
+                    ap_dropouts[ap_name] = True  # Mark AP as dropped out
+                    print(f"AP {ap_name} has dropped out.")
+                elif ap_dropouts[ap_name] and random.random() < recovery_probability:
+                    ap_dropouts[ap_name] = False  # Mark AP as recovered
+                    print(f"AP {ap_name} has recovered.")
+            
             with open(self.dev_cfg, "r") as f:
                 dt = json.load(f)
                 num_devices = dt["num_devices"]
@@ -470,14 +480,14 @@ class Cloud:
                             print(f"Trained until now: {len(trained_until_now)}")
                             for ap_name in trained_until_now:
                                 ap_index = int(ap_name[2:])
-                                if drop_outs[ap_index] == False:
+                                if not ap_dropouts[ap_name]:  # Only include active APs
                                     ap_weights.append(
                                         myaps[ap_name]
                                         .to(torch.device(preferred_device))
                                         .state_dict()
                                     )
                                 else:
-                                    print(f"Device {ap_index} has dropped out")
+                                    print(f"AP {ap_name} is unavailable (dropped out).")
 
                             if len(ap_weights) > 0:
                                 if cosine:
@@ -586,11 +596,32 @@ class Cloud:
                 elif len(available_devices) <= num_devices:
                     available_devices_idx = []
                     for d in available_devices:
+                        if ap_dropouts[d["AP_name"][0]]:
+                            print(f"Device {d['device_idx']} cannot connect to AP {d['AP_name'][0]} (dropped out).")
+                            active_aps = [ap for ap in ap_dropouts if not ap_dropouts[ap]]
+                            if active_aps:
+                                new_ap = active_aps[0]  # Pick the first active AP (can be randomized)
+                                print(f"Device {d['device_idx']} reassigned to AP {new_ap}.")
+                                d["AP_name"][0] = new_ap  # Update device's AP
+                            else:
+                                print(f"No active AP available for Device {d['device_idx']}. Skipping this device.")
+                                continue  # Skip this device if no AP is available
                         available_devices_idx.append(d["device_idx"])
 
                 elif len(available_devices) > 10:
                     available_devices_idx = []
                     for d in available_devices:
+                        if ap_dropouts[d["AP_name"][0]]:
+                            print(f"Device {d['device_idx']} cannot connect to AP {d['AP_name'][0]} (dropped out).")
+                            # Stopgap: Reassign to any active AP
+                            active_aps = [ap for ap in ap_dropouts if not ap_dropouts[ap]]
+                            if active_aps:
+                                new_ap = active_aps[0]  # Pick the first active AP
+                                print(f"Device {d['device_idx']} reassigned to AP {new_ap}.")
+                                d["AP_name"][0] = new_ap  # Update device's AP
+                            else:
+                                print(f"No active AP available for Device {d['device_idx']}. Skipping this device.")
+                                continue  # Skip this device if no AP is available
                         available_devices_idx.append(d["device_idx"])
                 else:
                     print(f"[!] ERROR: for t={t[t_idx]}")
