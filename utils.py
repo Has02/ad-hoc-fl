@@ -292,7 +292,7 @@ def get_hw_info(hw_type):
     elif hw_type == "mc1":
         return "password", "odroid", "/home/odroid/MOHAWK/files/"
     elif hw_type == "local":
-        return "pwd", "usr", "C://Users/Has02/Documents/mlrwn/MOHAWK/files/"
+        return "pwd", "usr", "C://Users/nickg/Workspace/RWML/ad-hoc-fl/files/"
     else:
         print("[!] ERROR wrong device type.")
 

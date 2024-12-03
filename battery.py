@@ -52,11 +52,11 @@ phone_models = {
         "frequency": 1.785,
     },
     "google_pixel_7": {
-        "battery_capacity": 10.0,
+        "battery_capacity": 14.37,
         "cores": 8,
         "power_coefficient": 0.1,
         "baseline_power": 0.6,
-        "frequency": 1.8,
+        "frequency": 2.285,
     },
 }
 
@@ -111,6 +111,41 @@ def plot_battery_life(battery_life, num_rounds, num_devices, experiment_name):
     plt.title("Battery Life Reduction of {} Devices".format(num_devices))
     # save the plot
     plt.savefig("figs/" + experiment_name + "_battery.png")
+
+
+"""
+Implementation of auction-based energy-aware selection
+
+We input the battery life and accuracies of the devices and the current round number.
+We output the top candidates for the next round of communication.
+
+The top candidates are selected based on the battery life of the devices.
+We want to balance the battery life to ensure devices don't die but we also want to ensure that the high accuracy devices
+still contribute to the global model.
+
+
+"""
+
+
+def is_candidate(phone, battery, round_num, total_rounds, threshold=0.05):
+    # If the battery is below the threshold, the device is not a candidate
+    if battery < threshold:
+        return False
+    # Estimate power and determine if it can be a candidate now or in the future
+    try:
+        model = phone_models[phone]
+    except:
+        model = np.random.choice(list(phone_models.values()))
+    avg_time = 8.0
+    power_consumption = (
+        model["baseline_power"]
+        + model["cores"] * model["power_coefficient"] * model["frequency"]
+    )
+    current_wh = battery * model["battery_capacity"]
+    if power_consumption * (scaling_factor * (avg_time / 3600)) > current_wh:
+        return False
+    else:
+        return True
 
 
 # simulating battery life reduction for 100 devices
