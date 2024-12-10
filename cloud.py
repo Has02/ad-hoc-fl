@@ -352,7 +352,7 @@ class Cloud:
 
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit the number of timesteps
-            myrange = range(50)
+            myrange = range(80)
 
         else:
             t_idx = 0
@@ -374,7 +374,7 @@ class Cloud:
                 mobility_data_filt = pickle.load(f)
             t = list(mobility_data_filt.keys())
             # myrange = range(len(t)), limit timesteps
-            myrange = range(50)
+            myrange = range(80)
 
         trained_until_now = []
         devices_last_seen = []
@@ -599,8 +599,10 @@ class Cloud:
                         if ap_dropouts[d["AP_name"][0]]:
                             print(f"Device {d['device_idx']} cannot connect to AP {d['AP_name'][0]} (dropped out).")
                             active_aps = [ap for ap in ap_dropouts if not ap_dropouts[ap]]
+                            print(type(active_aps[0]))
                             if active_aps:
-                                new_ap = active_aps[0]  # Pick the first active AP (can be randomized)
+                                # continue
+                                new_ap = random.choice(active_aps)  # Pick the first active AP (can be randomized)
                                 print(f"Device {d['device_idx']} reassigned to AP {new_ap}.")
                                 d["AP_name"][0] = new_ap  # Update device's AP
                             else:
@@ -616,7 +618,8 @@ class Cloud:
                             # Stopgap: Reassign to any active AP
                             active_aps = [ap for ap in ap_dropouts if not ap_dropouts[ap]]
                             if active_aps:
-                                new_ap = active_aps[0]  # Pick the first active AP
+                                # continue
+                                new_ap = random.choice(active_aps)  # Pick the first active AP
                                 print(f"Device {d['device_idx']} reassigned to AP {new_ap}.")
                                 d["AP_name"][0] = new_ap  # Update device's AP
                             else:
