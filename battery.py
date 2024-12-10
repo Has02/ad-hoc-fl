@@ -26,8 +26,10 @@ Then just multiply Pi by training time to get the power consumption for that rou
 
 import numpy as np
 
-battery_life = np.random.uniform(0.6, 0.7, 1000)
-scaling_factor = 25.0
+# generate bayesian distribution of battery life, where the average battery life is between 60% and 70%
+battery_life = np.random.normal(0.65, 0.05, 1000)
+# battery_life = np.random.uniform(0.6, 0.7, 1000)
+scaling_factor = 37.0
 
 """
 Dictionary of phone models:
@@ -86,11 +88,12 @@ def reduce_battery(phone, battery, training_time):
     current_wh = battery * model["battery_capacity"]
     if power_consumption * (scaling_factor * (training_time / 3600)) > current_wh:
         return 0
-    current_wh -= power_consumption * (scaling_factor * (training_time / 3600))
+    total = power_consumption * (scaling_factor * (training_time / 3600))
+    current_wh -= total
     battery = current_wh / model["battery_capacity"]
     if battery < 0:
         battery = 0
-    return battery
+    return battery, total
 
 
 def plot_battery_life(battery_life, num_rounds, num_devices, experiment_name):
@@ -155,13 +158,20 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     battery = []
+    total_energy_per_device = []
     for i in range(100):
         phone, b = init_battery()
         battery.append(b)
+        dev_energy = []
         for i in range(50):
-            b = reduce_battery(phone, b, 7.0)
+            energy = 0
+            if is_candidate(phone, b, i, 50) and i not in [0, 48]:
+                b, energy = reduce_battery(phone, b, 8.0)
             battery.append(b)
+            dev_energy.append(energy)
+        total_energy_per_device.append(sum(dev_energy) / 50)
     battery = np.array(battery).reshape(100, 51)
+    print("Average energy consumed per device: ", sum(total_energy_per_device) / 100)
     ax = plt.gca()
     ax.set_ylim([0, 1])
     plt.plot(battery.T, alpha=0.5)
