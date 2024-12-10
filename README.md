@@ -2,6 +2,8 @@
 
 This is a modified version of the MOHAWK repository for our Ad-Hoc Federated Learning Project. The simulation follows the same structure as MOHAWK, so we left the original README below for reference.
 
+Our repository is also published on GitHub at [here](https://github.com/Has02/ad-hoc-fl/tree/sim-debugging)
+
 ## 1. Prepare environment
 
 ```bash
